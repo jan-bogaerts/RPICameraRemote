@@ -3,16 +3,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>0314efaf-3bb4-41c6-be9a-85c9eb158195</ProjectGuid>
+    <ProjectGuid>7bdc02f1-1094-45ad-ab43-cd9d9506c6af</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>RPICameraRemote.py</StartupFile>
+    <StartupFile>StreamServer.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>RPICamera</Name>
-    <RootNamespace>RPICamera</RootNamespace>
-    <InterpreterId>{35a1c5e9-47c9-4b69-83c4-3bf82b8ae0ae}</InterpreterId>
+    <Name>StreamServer</Name>
+    <RootNamespace>StreamServer</RootNamespace>
+    <InterpreterId>{cdf08fbd-d72f-41c5-8d0e-7bca6aaf03d1}</InterpreterId>
     <InterpreterVersion>2.7</InterpreterVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -24,15 +24,14 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ATT_IOT.py" />
     <Compile Include="camera.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="RPICameraRemote.py" />
+    <Compile Include="StreamServer.py" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="env\">
-      <Id>{35a1c5e9-47c9-4b69-83c4-3bf82b8ae0ae}</Id>
+      <Id>{cdf08fbd-d72f-41c5-8d0e-7bca6aaf03d1}</Id>
       <BaseInterpreter>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</BaseInterpreter>
       <Version>2.7</Version>
       <Description>env (Python 64-bit 2.7)</Description>
@@ -44,6 +43,7 @@
     </Interpreter>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="index.html" />
     <Content Include="requirements.txt" />
   </ItemGroup>
   <PropertyGroup>
