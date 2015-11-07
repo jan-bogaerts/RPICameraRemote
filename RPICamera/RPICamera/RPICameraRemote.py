@@ -14,10 +14,13 @@ import RPi.GPIO as GPIO                            #provides pin support
 import ATT_IOT as IOT                              #provide cloud support
 from time import sleep                             #pause the app
 import picamera
+import cameraStreamer
 
 ConfigName = 'rpicamera.config'
 hasLISIPAROI = False
 LISIPAROIPin = 0
+streamer = None
+camera = None
 
 PreviewId = 1
 RecordId = 2
@@ -38,6 +41,13 @@ def tryLoadConfig():
     else:
         return False
 
+def setupCamera():
+    'create the camera responsible for recording video and streaming object responsible for sending it to the server.'
+    global streamer, camera
+    camera = picamera.PiCamera()
+    camera.resolution = (640, 480)
+    camera.framerate = 30
+    streamer = cameraStreamer.CameraStreamer(camera)
 
 #callback: handles values sent from the cloudapp to the device
 def on_message(id, value):
@@ -54,10 +64,10 @@ def on_message(id, value):
     elif id.endswith(str(PreviewId)) == True:
         value = value.lower()                        #make certain that the value is in lower case, for 'True' vs 'true'
         if value == "true":
-            camera.start_preview()
+            streamer.start_preview()
             IOT.send("true", PreviewId)                #provide feedback to the cloud that the operation was succesful
         elif value == "false":
-            camera.stop_preview()
+            streamer.stop_preview()
             IOT.send("false", PreviewId)                #provide feedback to the cloud that the operation was succesful
         else:
             print("unknown value: " + value)
@@ -85,6 +95,7 @@ def setupCloud():
     IOT.subscribe()              							#starts the bi-directional communication
 
 tryLoadConfig()
+setupCamera()
 setupCloud()
 if hasLISIPAROI:
     #setup GPIO using Board numbering
