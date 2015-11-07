@@ -1,15 +1,31 @@
-import thread
+﻿import thread
+import threading
 import io
 import socket
 import struct
 
 class Camera(object):
     def __init__(self):
-        self.currentFrame = None
+        self.clients = []                           # the list of clients currently monitoring this camera feed (a client is a user watching through a webpage)
+        self.clientsLock = threading.Lock()         # so multiple threads can add a client to a root camera feed.
         thread.start_new_thread(someFunc, ())       # we need to receive input async, in the background.
 
-    def get_frame(self):
-        return self.currentFrame
+    def add_client(self, client):
+        'thread save manner for adding a client to the list of open data feeds'
+        self.clientsLock.acquire()                  # thread save access to the list.
+        try:
+            self.clients.append(client)
+        finally:
+            self.clientsLock.release()
+
+    def remove_client(self, client):
+        'thread save manner for removing a client to the list of open data feeds'
+        self.clientsLock.acquire()                  # thread save access to the list.
+        try:
+            self.clients.remove(client)
+        finally:
+            self.clientsLock.release()
+
 
     def _runInputServer(self):
         '''this function is run in a seperate thread and listens on a socket for a single connection
@@ -38,7 +54,12 @@ class Camera(object):
                 # Rewind the stream and save it as the current frame
                 # processing on it
                 image_stream.seek(0)
-                self.currentFrame = image_stream
+                self.clientsLock.acquire()                  # thread save access to the list.
+                try:
+                    for client in self.clients:             # let all clients know that there is a new image available.
+                        client.set_frame(image_stream)
+                finally:
+                    self.clientsLock.release()
         finally:
             connection.close()
             server_socket.close()
