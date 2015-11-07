@@ -27,6 +27,9 @@
     <Compile Include="camera.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="cameraClient.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="StreamServer.py" />
   </ItemGroup>
   <ItemGroup>

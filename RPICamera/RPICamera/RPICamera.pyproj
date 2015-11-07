@@ -25,7 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ATT_IOT.py" />
-    <Compile Include="camera.py">
+    <Compile Include="cameraStreamer.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="RPICameraRemote.py" />
