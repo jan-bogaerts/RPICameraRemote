@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 
 class CameraClient(object):
     'represents a single user watching a camera feed through the website (multiple users can watch the same feed)'
@@ -12,7 +12,7 @@ class CameraClient(object):
         self.currentFrame = newFrame
         self.lock.set()
 
-    def get_NextFrame(self):
+    def get_frame(self):
         'for every call, returns with the next image/frame to show'
         self.lock.wait()                                        # wait until a new picture is available
         result = self.currentFrame

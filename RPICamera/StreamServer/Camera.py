@@ -8,7 +8,7 @@ class Camera(object):
     def __init__(self):
         self.clients = []                           # the list of clients currently monitoring this camera feed (a client is a user watching through a webpage)
         self.clientsLock = threading.Lock()         # so multiple threads can add a client to a root camera feed.
-        thread.start_new_thread(someFunc, ())       # we need to receive input async, in the background.
+        thread.start_new_thread(self._runInputServer, ())       # we need to receive input async, in the background.
 
     def add_client(self, client):
         'thread save manner for adding a client to the list of open data feeds'
@@ -35,6 +35,7 @@ class Camera(object):
         # Start a socket listening for connections on 0.0.0.0:8000 (0.0.0.0 means
         # all interfaces)
         server_socket = socket.socket()
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind(('0.0.0.0', 8000))
         server_socket.listen(0)
 

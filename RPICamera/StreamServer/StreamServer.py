@@ -15,7 +15,7 @@ def gen(camera):
         while True:
             frame = camera.get_frame()
             if not frame:
-                frame = open('noCamera.jpg', 'rb').read()
+                frame = open('templates/noCamera.jpg', 'rb').read()
             yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
     finally:

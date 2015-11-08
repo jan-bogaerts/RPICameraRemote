@@ -46,8 +46,12 @@
     </Interpreter>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="index.html" />
+    <Content Include="templates\noCamera.jpg" />
+    <Content Include="templates\index.html" />
     <Content Include="requirements.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="templates\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
