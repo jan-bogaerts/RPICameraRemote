@@ -1,3 +1,7 @@
+﻿
+import logging
+logging.getLogger().setLevel(logging.INFO)                                                                          #before doing anything else, set the desired logging level, so all modules log correctly.
+
 import io
 import socket
 import struct
@@ -43,7 +47,7 @@ class InputStreamer(threading.Thread):
     def run(self):
         # This method runs in a background thread
         self._cameraStreamer._connect()
-        self._cameraStreamer._pool = [OutputStreamer() for i in range(4)]
+        self._cameraStreamer._pool = [OutputStreamer(self._cameraStreamer) for i in range(4)]
         self._cameraStreamer._camera.capture_sequence(self._cameraStreamer.streams(), 'jpeg', use_video_port=True)
 
 
@@ -59,14 +63,20 @@ class CameraStreamer(object):
         self._pool_lock = threading.Lock()
         self._InputStreamer = None
         self._isRunning = False     # keep track of wether the camera is running or not
+        self.streamServerIp = None                                 # the ip address to send the video to.
+
 
     def start_preview(self):
         'start sending data to the cloud'
+        if not self.streamServerIp:
+            raise Exception("need ip address of server to start preview")
+        logging.info("start preview")
         self._isRunning = True
         self._InputStreamer = InputStreamer(self)
 
     def stop_preview(self):
         'stop sending data to the cloud'
+        logging.info("stop preview")
         self._isRunning = False
         # Shut down the streamers in an orderly fashion
         while self._pool:
@@ -81,19 +91,20 @@ class CameraStreamer(object):
         self._disconnect()
 
     def _connect(self):
-        self.client_socket = socket.socket()
-        self.client_socket.connect(('spider', 8000))
-        self.connection = client_socket.makefile('wb')
+        logging.info("connecting to: " + self.streamServerIp)
+        self._client_socket = socket.socket()
+        self._client_socket.connect((self.streamServerIp, 8000))
+        self._connection = self._client_socket.makefile('wb')
 
     def _disconnect(self):
-        self.connection.close()
-        self.client_socket.close()
+        self._connection.close()
+        self._client_socket.close()
 
     def streams(self):
         while self._isRunning:
-            with self.pool_lock:
-                if self.pool:
-                    streamer = self.pool.pop()
+            with self._pool_lock:
+                if self._pool:
+                    streamer = self._pool.pop()
                 else:
                     streamer = None
             if streamer:

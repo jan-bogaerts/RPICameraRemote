@@ -22,8 +22,6 @@ def on_connect(client, userdata, rc):
         print("subscribing to: " + topic)
         result = client.subscribe(topic)                                                    #Subscribing in on_connect() means that if we lose the connection and reconnect then subscriptions will be renewed.
         print(result)
-        if on_subscribed is not None:
-            on_subscribed()
     else:
         print("Failed to connect to mqtt broker: "  + mqtt.connack_string(rc))
 
@@ -52,8 +50,6 @@ _httpClient = None
 
 #callback for receiving values from the IOT platform
 on_message = None
-#optional callback, called when connection with broker has been created
-on_subscribed = None
 #the id of the client on the ATT platform, used to connect to the http & mqtt servers
 ClientId = None
 #the id of the device provided by the ATT platform
@@ -66,12 +62,10 @@ def connect(httpServer="api.smartliving.io"):
     global _httpClient, _httpServerName                                         # we assign to these vars first, so we need to make certain that they are declared as global, otherwise we create new local vars
     _httpClient = httplib.HTTPConnection(httpServer)
     _httpServerName = httpServer
-    print("connected with http server: " + httpServer)
+    print("connected with http server")
 
 def addAsset(id, name, description, isActuator, assetType, style = "Undefined"):
-    '''Add an asset to the device.
-	   allowed values for style: Primary, Config, Battery, Secondary
-	'''
+    '''Add an asset to the device.'''
 
     if not DeviceId:
         raise Exception("DeviceId not specified")
@@ -83,9 +77,9 @@ def addAsset(id, name, description, isActuator, assetType, style = "Undefined"):
     if assetType[0] == '{':                 # if the asset type is complex (starts with {', then render the body a little different
         body = body + '","profile":' + assetType + ',"deviceId":"' + DeviceId + '" }'
     else:
-        body = body + '","profile": {"type":"' + assetType + '" }}'  # ,"deviceId":"' + DeviceId + '"
+        body = body + '","profile": {"type":"' + assetType + '" },"deviceId":"' + DeviceId + '" }'
     headers = {"Content-type": "application/json", "Auth-ClientKey": ClientKey, "Auth-ClientId": ClientId}
-    url = "device/" + DeviceId + "/asset/" + str(id)
+    url = "/asset/" + DeviceId + str(id)
 	
     print("HTTP PUT: " + url)
     print("HTTP HEADER: " + str(headers))
@@ -96,69 +90,65 @@ def addAsset(id, name, description, isActuator, assetType, style = "Undefined"):
     print(response.status, response.reason)
     print(response.read())
 
+def createDevice(name, description, activityEnabled = False):
+    '''creates a new device. The Id of the device will be stored in DeviceId'''
+    global DeviceId
+    body = '{"name":"' + name + '","description":"' + description + '","activityEnabled":' + str(activityEnabled).lower() + '}'
+    headers = {"Content-type": "application/json", "Auth-ClientKey": ClientKey, "Auth-ClientId": ClientId}
+    url = "/Device"
 
-####
-#Working with devices now requires a ground id  (groups) for security
-
-#def createDevice(name, description, activityEnabled = False):
-#    '''creates a new device. The Id of the device will be stored in DeviceId'''
-#    global DeviceId
-#    body = '{"name":"' + name + '","description":"' + description + '","activityEnabled":' + str(activityEnabled).lower() + '}'
-#    headers = {"Content-type": "application/json", "Auth-ClientKey": ClientKey, "Auth-ClientId": ClientId}
-#    url = "/Device"
-
-#    print("HTTP POST: " + url)
-#    print("HTTP HEADER: " + str(headers))
-#    print("HTTP BODY:" + body)
-#    _httpClient.request("POST", url, body, headers)
-#    response = _httpClient.getresponse()
-#    print(response.status, response.reason)
-#    jsonStr =  response.read()
-#    print(jsonStr)
-#    if response.status == 201:
-#        d = json.loads(jsonStr)
-#        DeviceId = d["id"]
+    print("HTTP POST: " + url)
+    print("HTTP HEADER: " + str(headers))
+    print("HTTP BODY:" + body)
+    _httpClient.request("POST", url, body, headers)
+    response = _httpClient.getresponse()
+    print(response.status, response.reason)
+    jsonStr =  response.read()
+    print(jsonStr)
+    if response.status == 201:
+        d = json.loads(jsonStr)
+        DeviceId = d["id"]
 
 
-#def updateDevice(name, description, activityEnabled = False):
-#    '''updates the definition of the device'''
-#    global DeviceId
-#    if not DeviceId:
-#       raise Exception("DeviceId not specified")
-#    body = '{"name":"' + name + '","description":"' + description + '","activityEnabled":' + str(activityEnabled).lower() + '}'
-#    headers = {"Content-type": "application/json", "Auth-ClientKey": ClientKey, "Auth-ClientId": ClientId}
-#    url = "/Device/" + DeviceId
+def updateDevice(name, description, activityEnabled = False):
+    '''updates the definition of the device'''
+    global DeviceId
+    if not DeviceId:
+        raise Exception("DeviceId not specified")
+    body = '{"name":"' + name + '","description":"' + description + '","activityEnabled":' + str(activityEnabled).lower() + '}'
+    headers = {"Content-type": "application/json", "Auth-ClientKey": ClientKey, "Auth-ClientId": ClientId}
+    url = "/Device/" + DeviceId
 
-#    print("HTTP PUT: " + url)
-#    print("HTTP HEADER: " + str(headers))
-#    print("HTTP BODY:" + body)
-#    _httpClient.request("PUT", url, body, headers)
-#    response = _httpClient.getresponse()
-#    print(response.status, response.reason)
-#    jsonStr =  response.read()
-#    print(jsonStr)
+    print("HTTP PUT: " + url)
+    print("HTTP HEADER: " + str(headers))
+    print("HTTP BODY:" + body)
+    _httpClient.request("PUT", url, body, headers)
+    response = _httpClient.getresponse()
+    print(response.status, response.reason)
+    jsonStr =  response.read()
+    print(jsonStr)
 
-#def deleteDevice():
-#    '''
-#        Deletes the currently loaded device from the cloud.  After this function, the global DeviceId will be reset
-#        to None
-#    '''
-#    global DeviceId
-#    if not DeviceId:
-#        raise Exception("DeviceId not specified")
-#    headers = {"Content-type": "application/json", "Auth-ClientKey": ClientKey, "Auth-ClientId": ClientId}
-#    url = "/Device/" + DeviceId
-#
-#    print("HTTP DELETE: " + url)
-#    print("HTTP HEADER: " + str(headers))
-#    print("HTTP BODY: None")
-#    _httpClient.request("DELETE", url, "", headers)
-#    response = _httpClient.getresponse()
-#    print(response.status, response.reason)
-#    jsonStr =  response.read()
-#    print(jsonStr)
-#    if response.status == 204:
-#        DeviceId = None
+def deleteDevice():
+    '''
+        Deletes the currently loaded device from the cloud.  After this function, the global DeviceId will be reset
+        to None
+    '''
+    global DeviceId
+    if not DeviceId:
+        raise Exception("DeviceId not specified")
+    headers = {"Content-type": "application/json", "Auth-ClientKey": ClientKey, "Auth-ClientId": ClientId}
+    url = "/Device/" + DeviceId
+
+    print("HTTP DELETE: " + url)
+    print("HTTP HEADER: " + str(headers))
+    print("HTTP BODY: None")
+    _httpClient.request("DELETE", url, "", headers)
+    response = _httpClient.getresponse()
+    print(response.status, response.reason)
+    jsonStr =  response.read()
+    print(jsonStr)
+    if response.status == 204:
+        DeviceId = None
 
 def getPrimaryAsset():
     '''returns,as a list, the asset(s) assigned to the device as being "primary", that is, these assets represent the main functionality
@@ -184,7 +174,7 @@ def sendValueHTTP(value, assetId):
         raise Exception("DeviceId not specified")
     body = _buildPayLoadHTTP(value)
     headers = {"Content-type": "application/json", "Auth-ClientKey": ClientKey, "Auth-ClientId": ClientId}
-    url = "/device/" + DeviceId + "/asset/"  + str(assetId) + "/state"
+    url = "/asset/" +  DeviceId + str(assetId) + "/state"
 
     print("HTTP PUT: " + url)
     print("HTTP HEADER: " + str(headers))
@@ -232,7 +222,7 @@ def getAssetState(asset):
         global DeviceId
         if not DeviceId:
             raise Exception("DeviceId not specified")
-        url = "/device/" + DeviceId + "/asset/" + str(asset) + "/state"
+        url = "/asset/" + DeviceId + str(asset) +  "/state"
     else:
         url = "/asset/" + asset + "/state"
     return doHTTPGet(url, "")
@@ -291,10 +281,6 @@ def subscribe(mqttServer = "broker.smartliving.io", port = 1883):
     _mqttClient.connect(mqttServer, port, 60)
     _mqttClient.loop_start()
 
-def disconnect():
-    '''closes the connection with the broker'''
-    _mqttClient.disconnect()
-	
 def _buildPayLoad(value):
     typeOfVal = type(value)
     if typeOfVal in [types.IntType, types.BooleanType, types.FloatType, types.LongType, types.StringType]:      # if it's a basic type: send as csv, otherwise as json.
@@ -316,6 +302,6 @@ def send(value, assetId):
         print("sensor id not specified")
         raise Exception("sensorId not specified")
     toSend = _buildPayLoad(value)
-    topic = "client/" + ClientId + "/out/device/" + DeviceId + "/asset/" + str(assetId)  + "/state"		  # also need a topic to publish to
+    topic = "client/" + ClientId + "/out/asset/" + DeviceId + str(assetId)  + "/state"		  # also need a topic to publish to
     print("Publishing message - topic: " + topic + ", payload: " + toSend)
     _mqttClient.publish(topic, toSend, 0, False)

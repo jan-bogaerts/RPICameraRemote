@@ -11,15 +11,17 @@ def index():
     return render_template('index.html')
 
 def gen(camera):
-    try:
-        while True:
-            frame = camera.get_frame()
-            if not frame:
-                frame = open('templates/noCamera.jpg', 'rb').read()
-            yield (b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-    finally:
-        dataFeed.remove_client(camera)
+    #try:
+    #finally:
+    #    dataFeed.remove_client(camera)
+    while True:
+        print('waiting for frame')
+        frame = camera.get_frame()
+        print frame
+        if not frame:
+            frame = open('templates/noCamera.jpg', 'rb').read()
+        yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 @app.route('/video_feed')
 def video_feed():
