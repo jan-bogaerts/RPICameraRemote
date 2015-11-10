@@ -4,7 +4,7 @@ from camera import Camera
 from cameraClient import CameraClient
 
 app = Flask(__name__)
-dataFeed = Camera()
+dataFeed = None
 
 @app.route('/')
 def index():
@@ -13,11 +13,11 @@ def index():
 def gen(camera):
     #try:
     #finally:
+    #    print('removing client')
     #    dataFeed.remove_client(camera)
+    print(dataFeed.clients)
     while True:
-        print('waiting for frame')
         frame = camera.get_frame()
-        print frame
         if not frame:
             frame = open('templates/noCamera.jpg', 'rb').read()
         yield (b'--frame\r\n'
@@ -25,6 +25,9 @@ def gen(camera):
 
 @app.route('/video_feed')
 def video_feed():
+    global dataFeed
+    if not dataFeed:                                            # we have to create it during the call, otherwise the list that syncs between threads (cients) doesn't get synced correctly between threads (bummer).
+        dataFeed = Camera()
     client = CameraClient()
     dataFeed.add_client(client)
     return Response(gen(client),                  # all video streams use the same camera object -> the same input stream.

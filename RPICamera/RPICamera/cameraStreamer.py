@@ -28,7 +28,10 @@ class OutputStreamer(threading.Thread):
                         self._cameraStreamer._connection.write(struct.pack('<L', self.stream.tell()))
                         self._cameraStreamer._connection.flush()
                         self.stream.seek(0)
+                        print 'start write'
                         self._cameraStreamer._connection.write(self.stream.read())
+                        self._cameraStreamer._connection.flush()
+                        print 'end write'
                 finally:
                     self.stream.seek(0)
                     self.stream.truncate()

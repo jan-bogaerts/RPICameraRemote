@@ -15,7 +15,6 @@ class CameraClient(object):
     def get_frame(self):
         'for every call, returns with the next image/frame to show'
         self.lock.wait()                                        # wait until a new picture is available
-        print('returning frame')
         result = self.currentFrame
         self.lock.clear()
         return result

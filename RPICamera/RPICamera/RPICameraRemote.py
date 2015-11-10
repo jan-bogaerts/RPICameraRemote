@@ -17,6 +17,7 @@ from time import sleep                             #pause the app
 import picamera
 import cameraStreamer
 import sys
+import datetime                                     # for generating a unique file name
 
 ConfigName = 'rpicamera.config'
 hasLISIPAROI = False
@@ -69,10 +70,14 @@ def setBacklight(value):
         return False
     return True
 
+
+_isPreview = False
 def setPreview(value):
     if value == "true":
+        _isPreview = True
         streamer.start_preview()
     elif value == "false":
+        _isPreview = False
         streamer.stop_preview()
     else:
         print("unknown value: " + value)
@@ -80,8 +85,11 @@ def setPreview(value):
     return True
 
 def setRecord(value):
+    if _isPreview: 
+        print("preview not allowed during recording.")
+        setPreview(False)
     if value == "true":
-        camera.start_recording('video.h264')
+        camera.start_recording('video' + datetime.date.today().strftime("%d_%b_%Y_%H_%M%_S") + '.h264')
     elif value == "false":
         camera.stop_recording()
     else:
