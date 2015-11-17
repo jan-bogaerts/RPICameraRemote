@@ -21,7 +21,7 @@ import datetime                                     # for generating a unique fi
 
 ConfigName = 'rpicamera.config'
 hasLISIPAROI = False
-LISIPAROIPin = 0
+LISIPAROIPin = 4
 streamer = None
 camera = None
 
@@ -29,6 +29,10 @@ PreviewId = 1                                       # turn on/off preview on the
 RecordId = 2                                        # turn on/off recording on disk
 StreamServerId = 3                                  # assign the destination to stream the video to.
 ToggleLISIPAROIId = 4
+PictureId = 5
+
+_isPreview = False
+_isRecording = False
 
 def tryLoadConfig():
     'load the config from file'
@@ -67,12 +71,13 @@ def setBacklight(value):
         GPIO.output(LISIPAROIPin, GPIO.LOW)
     else:
         print("unknown value: " + value)
-        return False
-    return True
+    IOT.send(value, ToggleLISIPAROIId)                #provide feedback to the cloud that the operation was succesful
 
 
-_isPreview = False
 def setPreview(value):
+    if _isRecording:
+        print("recording not allowed during preview, shutting down recording.")
+        setRecord(False)
     if value == "true":
         _isPreview = True
         streamer.start_preview()
@@ -81,39 +86,60 @@ def setPreview(value):
         streamer.stop_preview()
     else:
         print("unknown value: " + value)
-        return False
-    return True
+    IOT.send(value, PreviewId)                #provide feedback to the cloud that the operation was succesful
 
 def setRecord(value):
     if _isPreview: 
-        print("preview not allowed during recording.")
+        print("preview not allowed during recording, shutting down preview.")
         setPreview(False)
     if value == "true":
+        camera.resolution = (1920, 1080)              #set to max resulotion for record
         camera.start_recording('video' + datetime.date.today().strftime("%d_%b_%Y_%H_%M%_S") + '.h264')
     elif value == "false":
         camera.stop_recording()
+        camera.resolution = (640, 480)              #reset resulotion for preview
     else:
         print("unknown value: " + value)
-        return False
-    return True
+    IOT.send(value, RecordId)                #provide feedback to the cloud that the operation was succesful
+
+def takePicture():
+    'take a single picture, max resoution'
+    prevWasPreview = _isPreview
+    prevWasRecording = _isRecording
+    if _isRecording:
+        print("record not allowed while taking picture.")
+        setRecord(False)
+    if not _isPreview: 
+        print("preview required for taking picture.")
+        setPreview(True)
+        sleep(2)                                # if preview was not running yet, give it some time to startup
+    
+    camera.capture('picture' + datetime.date.today().strftime("%d_%b_%Y_%H_%M%_S") + '.jpg')
+
+    if prevWasPreview:
+        print("reactivating preview.")
+        setPreview(True)
+    elif prevWasRecording:
+        print("reactivating record.")
+        setRecord(True)
 
 #callback: handles values sent from the cloudapp to the device
 def on_message(id, value):
     if id.endswith(str(ToggleLISIPAROIId)) == True:
         value = value.lower()                        #make certain that the value is in lower case, for 'True' vs 'true'
-        if setBacklight(value):
-            IOT.send(value, ToggleLISIPAROIId)                #provide feedback to the cloud that the operation was succesful
+        setBacklight(value)
     elif id.endswith(str(PreviewId)) == True:
         value = value.lower()                        #make certain that the value is in lower case, for 'True' vs 'true'
-        if setPreview(value):
-            IOT.send(value, PreviewId)                #provide feedback to the cloud that the operation was succesful
+        setPreview(value)
     elif id.endswith(str(RecordId)) == True:
         value = value.lower()                        #make certain that the value is in lower case, for 'True' vs 'true'
-        if setRecord(value):
-            IOT.send(value, RecordId)                #provide feedback to the cloud that the operation was succesful
+        setRecord(value)
     elif id.endswith(str(StreamServerId)) == True:
         streamer.streamServerIp = value
         IOT.send(value, StreamServerId)                #provide feedback to the cloud that the operation was succesful
+    elif id.endswith(str(PictureId)) == True:
+        if value.lower() == "true":
+            takePicture()
     else:
         print("unknown actuator: " + id)
 
@@ -125,6 +151,7 @@ def setupCloud():
         IOT.addAsset(ToggleLISIPAROIId, "LISIPAROI", "Control the light on the camera", False, "boolean")
     IOT.addAsset(PreviewId, "Preview", "Show/close a preview on the monitor that is connected to the RPI", True, "boolean")
     IOT.addAsset(RecordId, "Record", "Start/stop recording the video stream on sd-card", True, "boolean")
+    IOT.addAsset(PictureId, "Picture", "take a picture (max resoution) and store on sd-card", True, "boolean")
     IOT.addAsset(StreamServerId, "Stream server", "set the ip address of the server that manages the video", True, "string")
 
     # get any previously defined settings
@@ -148,8 +175,8 @@ setupCloud()
 if hasLISIPAROI:
     try:
         #setup GPIO using Board numbering
-        GPIO.setmode(GPIO.BCM)
-        #GPIO.setmode(GPIO.BOARD)
+        #GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD)
         #set up the pins
         GPIO.setup(LISIPAROIPin, GPIO.OUT)
     except:
